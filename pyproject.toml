@@ -1,0 +1,18 @@
+[project]
+name = "mcp-data-lens"
+version = "0.1.0"
+description = "FastMCP Data Lens Server with SSH Tunnel Support"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.13.0.2",
+    "matplotlib>=3.10.7",
+    "mysql-connector-python>=9.5.0",
+    "pandas>=2.3.3",
+    "paramiko==3.5.1",
+    "pydantic>=2.12.3",
+    "pydantic-settings>=2.11.0",
+    "python-dotenv>=1.2.1",
+    "sshtunnel>=0.4.0",
+    "uvicorn>=0.38.0",
+]
