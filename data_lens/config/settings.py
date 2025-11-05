@@ -79,7 +79,8 @@ class Settings(BaseSettings):
 
     # Authentication (for future implementation)
     AUTH_ENABLED: bool = Field(False, alias="AUTH_ENABLED")
-    AUTH_SECRET_KEY: str = Field("change-me-in-production", alias="AUTH_SECRET_KEY")
+    GOOGLE_CLIENT_ID: str = Field("enter your google client id here", alias="GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: str = Field("enter your google client secret here", alias="GOOGLE_CLIENT_SECRET")
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False

@@ -28,12 +28,14 @@
 ### 🚀 Flexible Deployment
 - **Stdio Mode**: Native integration with Claude Desktop
 - **HTTP Mode**: REST API for web applications and other clients
+- **OAuth Authentication**: Google OAuth 2.0 support for secure access
 - **Modular Architecture**: Clean, maintainable code structure
 
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
 - [Configuration](#-configuration)
+  - [OAuth Authentication Setup](#oauth-authentication-setup)
 - [Usage](#-usage)
   - [With Claude Desktop](#with-claude-desktop)
   - [With Cursor](#with-cursor)
@@ -142,9 +144,11 @@ LOCAL_BIND_PORT=3306
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8000
 
-# Authentication (future feature)
+# OAuth Authentication (Google)
 AUTH_ENABLED=false
 AUTH_SECRET_KEY=change-me-in-production
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
 ### Configuration Options Explained
@@ -166,6 +170,58 @@ AUTH_SECRET_KEY=change-me-in-production
 | `LOCAL_BIND_PORT` | Local port for SSH tunnel | `3306` |
 | `SERVER_HOST` | HTTP server bind address | `0.0.0.0` |
 | `SERVER_PORT` | HTTP server port | `8000` |
+| `AUTH_ENABLED` | Enable OAuth authentication | `false` |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID | - |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret | - |
+
+### OAuth Authentication Setup
+
+MCP Data Lens supports OAuth 2.0 authentication using Google as the identity provider. This is optional but recommended for production deployments.
+
+#### Setting up Google OAuth
+
+1. **Create a Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Google OAuth API**:
+   - Navigate to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "OAuth client ID"
+   - Configure OAuth consent screen if you haven't already
+
+3. **Configure OAuth Client**:
+   - Application type: "Web application"
+   - Authorized redirect URIs: Add `http://localhost:8000/auth/callback` (adjust host/port as needed)
+   - Copy the Client ID and Client Secret
+
+4. **Update Environment Variables**:
+   ```bash
+   AUTH_ENABLED=true
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   ```
+
+5. **Start the Server in HTTP Mode**:
+   ```bash
+   export TRANSPORT_MODE=http
+   make run-http
+   ```
+
+#### OAuth Flow
+
+When OAuth is enabled, the server exposes the following endpoints:
+
+- `/.well-known/oauth-authorization-servers` - OAuth server metadata
+- `/authorize` - Initiates the OAuth flow
+- `/auth/callback` - Handles OAuth callback from Google
+
+The authentication flow:
+1. Client initiates login by visiting `/authorize`
+2. User is redirected to Google for authentication
+3. After successful authentication, Google redirects back to `/auth/callback`
+4. Server validates the token and creates an authenticated session
+5. Subsequent MCP requests include authentication headers
+
 
 ## 📖 Usage
 
@@ -254,7 +310,7 @@ The server will start at `http://localhost:8000`
 {
   "mcpServers": {
     "data-lens": {
-      "url": "http://127.0.0.1:8000/data-lens/mcp"
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }
@@ -283,7 +339,7 @@ uv run server.py
 
 The server will start at `http://localhost:8000` (or your configured host/port).
 
-**Access the MCP endpoints at**: `http://localhost:8000/data-lens/`
+**Access the MCP endpoints at**: `http://localhost:8000/mcp`
 
 ## 🛠️ Available Tools
 
@@ -703,7 +759,7 @@ fastmcp dev server.py
    - Launch a web interface (typically at `http://localhost:5173`)
    - Connect to your MCP server in stdio mode
    - you need to change the Transport Type to Streamable http if not alread
-   - change the url to http://localhost:8000/data-lens/mcp
+   - change the url to http://localhost:8000/mcp
    - click on connect
    - Display all available tools, resources, and prompts
    - Allow you to test tool calls interactively

@@ -18,6 +18,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
+from fastmcp.server.auth.providers.google import GoogleProvider
 
 from data_lens.database.connection import DatabaseContext, DatabaseState
 from data_lens.mcp.prompts import register_report_prompts
@@ -27,6 +28,7 @@ from data_lens.mcp.tools import (register_elicit_tool, register_mysql_tools,
                                  register_progress_tool,
                                  register_visualization_tools)
 from data_lens.utils.logger import get_logger
+from data_lens.config import settings
 
 from .middleware import TagBasedMiddleware
 
@@ -54,6 +56,19 @@ async def mcp_lifespan(app) -> AsyncIterator[DatabaseContext]:
         await db_state.cleanup()
         logger.info("✓ Combined cleanup completed")
 
+auth_provider = None
+# The GoogleProvider handles Google's token format and validation
+if settings.AUTH_ENABLED:
+    auth_provider = GoogleProvider(
+        client_id=settings.GOOGLE_CLIENT_ID,  # Your Google OAuth Client ID
+        client_secret=settings.GOOGLE_CLIENT_SECRET,                  # Your Google OAuth Client Secret
+        base_url="http://localhost:8000",                  # Must match your OAuth configuration
+        required_scopes=[                                  # Request user information
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+        ],
+        # redirect_path="/auth/callback"                  # Default value, customize if needed
+    )
 
 # Create the single FastMCP instance used throughout the application
 mcp = FastMCP(
@@ -64,6 +79,7 @@ mcp = FastMCP(
         "and inspect database schemas securely."
     ),
     lifespan=mcp_lifespan,
+    auth=auth_provider
 )
 
 # Add middleware

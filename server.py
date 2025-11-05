@@ -25,7 +25,7 @@ from collections.abc import AsyncIterator
 import uvicorn
 
 # Import the main MCP instance (all tools/resources/prompts are auto-registered)
-from data_lens.mcp.mcp import mcp
+from data_lens.mcp.mcp import mcp, auth_provider
 from data_lens.config import settings
 from data_lens.database import DatabaseState, DatabaseContext
 from data_lens.utils.logger import get_logger, setup_logging
@@ -40,7 +40,7 @@ from starlette.routing import Mount
 setup_logging()
 logger = get_logger(__name__)
 
-
+MCP_PATH = "/mcp"
 # Define CORS middleware for HTTP mode
 middleware = [
     Middleware(
@@ -58,12 +58,18 @@ middleware = [
 ]
 
 # Create ASGI application for MCP
-mcp_app = mcp.http_app(middleware=middleware)
+mcp_app = mcp.http_app(middleware=middleware, path=MCP_PATH)
 
+# Define MCP path and get well-known auth routes
+if auth_provider:
+    well_known_routes = auth_provider.get_well_known_routes(mcp_path=MCP_PATH)
+else:
+    well_known_routes = []
 
 app = Starlette(
     routes=[
-        Mount("/data-lens", app=mcp_app),
+        *well_known_routes,  # Auth well-known routes (/.well-known/*, /auth/*)
+        Mount("/", app=mcp_app),
         # Add other routes as needed
     ],
     lifespan=mcp_app.lifespan,
